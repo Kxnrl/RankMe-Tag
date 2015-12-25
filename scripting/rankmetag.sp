@@ -2,25 +2,25 @@
 #include <sourcemod>
 #include <rankme>
 #include <cstrike>
-#include <scp>
-#include <morecolors>
-#include <smlib>
 #include <sdktools>
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION " 1.2 - [CG] Community Version "
 
+new String:g_ClientRank[MAXPLAYERS + 1][64];
+new bool:g_bClientRank[MAXPLAYERS+1];
 
-public Plugin:myinfo = {
-	name = "RankMe Clantag Chattag",
-	author = "maoling",
+public Plugin myinfo = 
+{
+	name = "RankMe Clantag",
+	author = "maoling ( shAna.xQy )",
 	description = "",
 	version = PLUGIN_VERSION,
-	url = "tiara.moe"
+	url = "http://steamcommunity.com/id/shAna_xQy/"
 };
 
 public OnPluginStart()
 {
-	HookEvent("player_team", OnPlayerTeam);	
+	HookEvent("player_spawn", OnPlayerSpawn);	
 }
 
 public OnAllPluginsLoaded()
@@ -47,29 +47,43 @@ public OnLibraryRemoved(const String:name[])
 	}
 }
 
-public OnPlayerTeam(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:RankMe_OnPlayerLoaded(client)
 {
-	RankMe_GetRank(GetClientOfUserId(GetEventInt(event, "userid")),RankConnectCallback);
-
+	
+	RankMe_GetRank(client, RankConnectCallback);
+	
 	return Plugin_Continue;
+}
+
+public OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(client != 0)
+	{
+		if(!g_bClientRank[client])
+		{
+			decl String:sBuffer[MAX_NAME_LENGTH];
+			FormatEx(sBuffer, sizeof(sBuffer), "未统计");
+			CS_SetClientClanTag(client, sBuffer);
+		}
+		else
+		{
+			decl String:sBuffer[MAX_NAME_LENGTH];
+			FormatEx(sBuffer, sizeof(sBuffer), "Top-%s", g_ClientRank[client]);
+			CS_SetClientClanTag(client, sBuffer);
+		}
+	}
 }
 
 public RankConnectCallback(client, rank, any:data)
 {
-	decl String:sBuffer[MAX_NAME_LENGTH];
-	FormatEx(sBuffer, sizeof(sBuffer), "Top-%i", rank);				// Set Clan Tag with Rank , override 
-	CS_SetClientClanTag(client, sBuffer); 
-}
-
-public Action:OnChatMessage(&client, Handle:recipients, String:name[], String:message[])
-{
-	int Points=RankMe_GetPoints(client);
-
-	Format(name, 1024, "\x01 \x10[%i分] \x02%s", Points, name);     // Set Chat Tag with Score , Compatible with Store(Zephyrus) name color , name tag and message color
-	CReplaceColorCodes(name, client, false, 1024);
-
-	Format(message, 1024, "\x01 \x0C%s", message);
-	CReplaceColorCodes(message, client, false, 1024);
-
-	return Plugin_Handled;
+	if(rank == 0)
+	{
+		g_bClientRank[client] = false;
+	}
+	else
+	{
+		IntToString(rank, g_ClientRank[client], sizeof(g_ClientRank[]));
+		g_bClientRank[client] = true;
+	}
 }
