@@ -1,10 +1,10 @@
 #pragma semicolon  1
+
 #include <sourcemod>
 #include <rankme>
 #include <cstrike>
-#include <sdktools>
 
-#define PLUGIN_VERSION " 1.2 - [CG] Community Version "
+#define PLUGIN_VERSION " 1.3 - [CG] Community Version "
 
 new String:g_ClientRank[MAXPLAYERS + 1][64];
 new bool:g_bClientRank[MAXPLAYERS+1];
@@ -20,7 +20,7 @@ public Plugin myinfo =
 
 public OnPluginStart()
 {
-	HookEvent("player_spawn", OnPlayerSpawn);	
+	HookEvent("player_team", OnPlayerTeam);	
 }
 
 public OnAllPluginsLoaded()
@@ -55,23 +55,23 @@ public Action:RankMe_OnPlayerLoaded(client)
 	return Plugin_Continue;
 }
 
-public OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public OnPlayerTeam(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if(client != 0)
 	{
-		if(!g_bClientRank[client])
+		if(IsClientInGame(client) && GetClientTeam(client) > 1)
 		{
-			decl String:sBuffer[MAX_NAME_LENGTH];
-			FormatEx(sBuffer, sizeof(sBuffer), "未统计");
-			CS_SetClientClanTag(client, sBuffer);
+			OverwriteClanTag(client);
 		}
-		else
-		{
-			decl String:sBuffer[MAX_NAME_LENGTH];
-			FormatEx(sBuffer, sizeof(sBuffer), "Top-%s", g_ClientRank[client]);
-			CS_SetClientClanTag(client, sBuffer);
-		}
+	}
+}
+
+public OnClientSettingsChanged(client)
+{
+    if(IsClientInGame(client) && GetClientTeam(client) > 1)
+	{
+		OverwriteClanTag(client);
 	}
 }
 
@@ -85,5 +85,21 @@ public RankConnectCallback(client, rank, any:data)
 	{
 		IntToString(rank, g_ClientRank[client], sizeof(g_ClientRank[]));
 		g_bClientRank[client] = true;
+	}
+}
+
+public OverwriteClanTag(client)
+{
+	if(!g_bClientRank[client])
+	{
+		decl String:sBuffer[MAX_NAME_LENGTH];
+		FormatEx(sBuffer, sizeof(sBuffer), "未统计");
+		CS_SetClientClanTag(client, sBuffer);
+	}
+	else
+	{
+		decl String:sBuffer[MAX_NAME_LENGTH];
+		FormatEx(sBuffer, sizeof(sBuffer), "Top-%s", g_ClientRank[client]);
+		CS_SetClientClanTag(client, sBuffer);
 	}
 }
