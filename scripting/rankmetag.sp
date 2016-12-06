@@ -3,103 +3,77 @@
 #include <sourcemod>
 #include <rankme>
 #include <cstrike>
+#pragma newdecls required
 
-#define PLUGIN_VERSION " 1.3 - [CG] Community Version "
 
-new String:g_ClientRank[MAXPLAYERS + 1][64];
-new bool:g_bClientRank[MAXPLAYERS+1];
+char g_szClantag[MAXPLAYERS+1][32];
 
 public Plugin myinfo = 
 {
 	name = "RankMe Clantag",
-	author = "maoling ( shAna.xQy )",
+	author = "maoling ( xQy )",
 	description = "",
-	version = PLUGIN_VERSION,
-	url = "http://steamcommunity.com/id/shAna_xQy/"
+	version = "1.3.1",
+	url = "http://steamcommunity.com/id/_xQy_/"
 };
 
-public OnPluginStart()
+public void OnPluginStart()
 {
-	HookEvent("player_team", OnPlayerTeam);	
+	HookEvent("player_spawn", Event_PlayerEvent);	
+	HookEvent("player_team", Event_PlayerEvent);	
 }
 
-public OnAllPluginsLoaded()
+public void OnAllPluginsLoaded()
 {
 	if(!LibraryExists("rankme"))
-	{	
-		LogError("RankMe not found. Plugin won't work.");		
-	}
+		SetFailState("RankMe not found. Plugin won't work.");		
 }
 
-public OnLibraryAdded(const String:name[])
+public void OnLibraryRemoved(const char[] name)
 {
-	if (StrEqual(name, "rankme"))
-	{
-		LogMessage("RankMe Loaded.  Plugin is working.");
-	}
+	if(StrEqual(name, "rankme"))
+		SetFailState("RankMe not found. Plugin won't work.");
 }
 
-public OnLibraryRemoved(const String:name[])
+public Action RankMe_OnPlayerLoaded(int client)
 {
-	if (StrEqual(name, "rankme"))
-	{
-		LogError("RankMe Unloaded.  Plugin won't work.");
-	}
+	RankMe_GetRank(client, GetClientRankCallback);
 }
 
-public Action:RankMe_OnPlayerLoaded(client)
+public Action Event_PlayerEvent(Handle event, const char[] name, bool dontBroadcast)
 {
-	
-	RankMe_GetRank(client, RankConnectCallback);
-	
-	return Plugin_Continue;
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(CanOverride(client)) OverwriteClanTag(client);
 }
 
-public OnPlayerTeam(Handle:event, const String:name[], bool:dontBroadcast)
+public void OnClientSettingsChanged(int client)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
-	if(client != 0)
-	{
-		if(IsClientInGame(client) && GetClientTeam(client) > 1)
-		{
-			OverwriteClanTag(client);
-		}
-	}
+    if(CanOverride(client)) OverwriteClanTag(client);
 }
 
-public OnClientSettingsChanged(client)
-{
-    if(IsClientInGame(client) && GetClientTeam(client) > 1)
-	{
-		OverwriteClanTag(client);
-	}
-}
-
-public RankConnectCallback(client, rank, any:data)
+public int GetClientRankCallback(int client, int rank, any data)
 {
 	if(rank == 0)
-	{
-		g_bClientRank[client] = false;
-	}
+		strcopy(g_szClantag[client], 32, "NoRank");
 	else
-	{
-		IntToString(rank, g_ClientRank[client], sizeof(g_ClientRank[]));
-		g_bClientRank[client] = true;
-	}
+		Format(g_szClantag[client], 32, "Top-%d", rank);
 }
 
-public OverwriteClanTag(client)
+void OverwriteClanTag(int client)
 {
-	if(!g_bClientRank[client])
-	{
-		decl String:sBuffer[MAX_NAME_LENGTH];
-		FormatEx(sBuffer, sizeof(sBuffer), "未统计");
-		CS_SetClientClanTag(client, sBuffer);
-	}
-	else
-	{
-		decl String:sBuffer[MAX_NAME_LENGTH];
-		FormatEx(sBuffer, sizeof(sBuffer), "Top-%s", g_ClientRank[client]);
-		CS_SetClientClanTag(client, sBuffer);
-	}
+	CS_SetClientClanTag(client, g_szClantag[client]);
+}
+
+bool CanOverride(int client)
+{
+	if(!(1 <= client <= MaxClients))
+		return false;
+	
+	if(!IsClientInGame(client))
+		return false;
+	
+	if(GetClientTeam(client) <= 1)
+		return false;
+
+	return true;
 }

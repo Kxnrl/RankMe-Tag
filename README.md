@@ -12,4 +12,4 @@ smlib
 https://github.com/bcserv/smlib
 
 My Steam
-http://steamcommunity.com/id/tiara_xQy/
+http://steamcommunity.com/id/_xQy_/
