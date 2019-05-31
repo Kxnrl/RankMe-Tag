@@ -1,7 +1,9 @@
+#include <sourcemod>
 #include <rankme>
 #include <cstrike>
 
 #pragma newdecls required
+#pragma semicolon 1
 
 char g_szClantag[MAXPLAYERS+1][32];
 
