@@ -44,7 +44,7 @@ public Action RankMe_OnPlayerLoaded(int client)
 	RankMe_GetRank(client, GetClientRankCallback);
 }
 
-public int GetClientRankCallback(int client, int rank, any data)
+public Action GetClientRankCallback(int client, int rank, any data)
 {
 	if (rank == 0)
 	{
